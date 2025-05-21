@@ -17,7 +17,7 @@ static void InitOstream(const Config& c, std::initializer_list<std::pair<path, B
   for (auto&& stream : to_init) {
     *stream.second = c.ofstream(stream.first);
     if (stream.second->fail()) {
-      throw fmt::SystemError(errno, "Can\'t open {}", stream.first);
+      throw fmt::system_error(errno, "Can\'t open {}", stream.first.string());
     }
   }
 }
@@ -36,10 +36,10 @@ ACWorkerStats::ACWorkerStats(const Config& c)
     WriteTask task;
     while (write_tasks_.Pop(task)) {
       if (task.out_) {
-        task.out_->write(task.data_.c_str(), task.data_.size());
+        task.out_->write(fmt::to_string(task.data_).c_str(), task.data_.size());
       }
       if (task.tee_to_stdout_) {
-        std::cout.write(task.data_.c_str(), task.data_.size());
+        std::cout.write(fmt::to_string(task.data_).c_str(), task.data_.size());
         std::cout.flush();
       }
     }

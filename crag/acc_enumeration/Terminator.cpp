@@ -5,11 +5,12 @@
 #include "Terminator.h"
 #include <atomic>
 
+#include <cassert>
 #include <signal.h>
 #include <unistd.h>
 #include <fmt/format.h>
 #include <iostream>
-
+#include <functional>
 
 // linux-specific version
 std::thread SpawnThread(Terminator* terminator) {
@@ -25,7 +26,7 @@ std::thread SpawnThread(Terminator* terminator) {
   sigaddset(&set, SIGTERM);
   int s = pthread_sigmask(SIG_BLOCK, &set, NULL);
   if (s != 0) {
-    throw fmt::SystemError(s, "Can't block SIGINT/SIGTERM");
+    throw fmt::system_error(s, "Can't block SIGINT/SIGTERM");
   }
 
   return std::thread([terminator] {
@@ -41,13 +42,13 @@ std::thread SpawnThread(Terminator* terminator) {
     sigfillset(&block_all);
     int all_err = pthread_sigmask(SIG_BLOCK, &block_all, NULL);
     if (all_err != 0) {
-      throw fmt::SystemError(all_err, "Can't block all signals");
+      throw fmt::system_error(all_err, "Can't block all signals");
     }
 
     int sig;
     auto wait_err = sigwait(&listen_to, &sig);
     if (wait_err != 0) {
-      throw fmt::SystemError(wait_err, "Sigwait failed");
+      throw fmt::system_error(wait_err, "Sigwait failed");
     }
     assert(sig == SIGINT || sig == SIGTERM);
     terminator->ScheduleTermination();
@@ -70,7 +71,7 @@ void Terminator::ScheduleTermination() {
     sigfillset(&unblock_all);
     int all_err = pthread_sigmask(SIG_UNBLOCK, &unblock_all, NULL);
     if (all_err != 0) {
-      throw fmt::SystemError(all_err, "Can't unblock all signals");
+      throw fmt::system_error(all_err, "Can't unblock all signals");
     }
 
     std::clog << "Terminating (second signal will terminate processes immediately)" << std::endl;
@@ -96,7 +97,7 @@ Terminator::~Terminator() {
   sigaddset(&set, SIGTERM);
   int s = pthread_sigmask(SIG_UNBLOCK, &set, NULL);
   if (s != 0) {
-    throw fmt::SystemError(s, "Can't unblock SIGINT/SIGTERM");
+    throw fmt::system_error(s, "Can't unblock SIGINT/SIGTERM");
   }
 
   this->signal_handler_.join();

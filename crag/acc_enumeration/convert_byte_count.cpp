@@ -10,6 +10,7 @@
 #include <fmt/format.h>
 #include <cstdlib>
 #include <cerrno>
+#include <cassert>
 
 // @dpantele: code below is adapted from
 // http://agentzlerich.blogspot.com/2011/01/converting-to-and-from-human-readable.html

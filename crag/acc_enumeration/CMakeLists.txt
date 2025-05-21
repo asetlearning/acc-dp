@@ -1,13 +1,17 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.5)
 
 hunter_add_package(fmt)
 find_package(fmt CONFIG REQUIRED)
 
+hunter_add_package(nlohmann_json)
+find_package(nlohmann_json REQUIRED)
+
+#hunter_add_package(Boost)
+#find_package(Boost CONFIG REQUIRED)
+
 hunter_add_package(Boost COMPONENTS filesystem iostreams system thread)
 find_package(Boost CONFIG REQUIRED filesystem iostreams system thread)
 
-hunter_add_package(nlohmann-json)
-find_package(nlohmann-json REQUIRED)
 
 add_library(acc_enumerate_utils
     STATIC
@@ -30,8 +34,8 @@ target_link_libraries(acc_enumerate_utils
 
     Threads::Threads
 
-    fmt
-    nlohmann-json::nlohmann-json
+    fmt::fmt
+    nlohmann_json::nlohmann_json
 
     crag_compressed_word_tuple_normal_form
     crag_folded_graph
@@ -41,7 +45,7 @@ target_link_libraries(acc_enumerate_utils
     disjoint_subsets
 )
 
-# target_compile_options(acc_enumerate_utils PUBLIC -g -O1)
+#target_compile_options(acc_enumerate_utils PUBLIC -g -O1)
 
 add_executable(crag.acc_enumeration.acc_enumerate
     ACPairProcessQueue.h
@@ -61,7 +65,8 @@ add_executable(crag.acc_enumeration.dump_cleanup
     dump_cleanup.cpp)
 
 target_link_libraries(crag.acc_enumeration.dump_cleanup PRIVATE
-    acc_enumerate_utils)
+    acc_enumerate_utils
+)
 
 set_target_properties(crag.acc_enumeration.acc_enumerate PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED ON)
 

@@ -19,7 +19,7 @@ static void InitOstream(const Config& c, std::initializer_list<std::pair<path, B
   for (auto&& stream : to_init) {
     *stream.second = c.ofstream(stream.first, std::ios_base::out | std::ios_base::trunc);
     if (stream.second->fail()) {
-      throw fmt::SystemError(errno, "Can\'t open {}", stream.first);
+      throw fmt::system_error(errno, "Can\'t open {}", stream.first.string());
     }
   }
 }
@@ -41,7 +41,7 @@ ACStateDump::ACStateDump(const Config& c)
   writer_ = std::thread([this] {
     ACStateDump::WriteTask task;
     while (write_tasks_.Pop(task)) {
-      task.out_->write(task.data_.c_str(), task.data_.size());
+      task.out_->write(fmt::to_string(task.data_).c_str(), task.data_.size());
     }
 //    std::clog << "Max queue size: " << write_tasks_.MaxCount()
 //        << "\nCount times blocked: " << write_tasks_.MaxCountIsSizeTimes() << "\n";
@@ -54,21 +54,21 @@ ACStateDump::~ACStateDump() {
 }
 
 void ACStateDump::Merge(const ACClass& a, const ACClass& b) {
-  Write(classes_merges_out_, [&](fmt::MemoryWriter& data) {
-    data.write("{} {}\n", a.id_, b.id_);
+  Write(classes_merges_out_, [&](fmt::memory_buffer& data) {
+    fmt::format_to(std::back_inserter(data), "{} {}\n", a.id_, b.id_);
   });
 }
 
 void ACStateDump::NewMinimum(const ACClass& c, const ACPair& p) {
-  Write(classes_minimums_out_, [&](fmt::MemoryWriter& data) {
-    data.write("{} {} {}\n", c.id_, ToString(p[0]), ToString(p[1]));
+  Write(classes_minimums_out_, [&](fmt::memory_buffer& data) {
+    fmt::format_to(std::back_inserter(data), "{} {} {}\n", c.id_, ToString(p[0]), ToString(p[1]));
   });
 }
 
 void ACStateDump::DumpVertexHarvest(const ACPair& v, unsigned int harvest_limit, unsigned int complete_count) {
-  Write(ac_graph_vertex_harvest_, [&](fmt::MemoryWriter& data) {
+  Write(ac_graph_vertex_harvest_, [&](fmt::memory_buffer& data) {
     DumpPair(v, &data);
-    data.write(" {:2} {}\n", harvest_limit, complete_count);
+    fmt::format_to(std::back_inserter(data), " {:2} {}\n", harvest_limit, complete_count);
   });
 }
 
@@ -91,12 +91,11 @@ void ACStateDump::DumpPair(const ACPair& p, std::ostream* out) {
       second_dump.letters, LengthToWidth(second_dump.length));
 }
 
-void ACStateDump::DumpPair(const ACPair& p, fmt::MemoryWriter* out) {
+void ACStateDump::DumpPair(const ACPair& p, fmt::memory_buffer* out) {
   auto first_dump = p[0].GetDump();
   auto second_dump = p[1].GetDump();
 
-  out->write(
-      "{0:02}:{1:02}:{2:02}:{3:0{4}x}:{5:0{6}x}",
+  fmt::format_to(std::back_inserter(*out), "{0:02}:{1:02}:{2:02}:{3:0{4}x}:{5:0{6}x}",
       p.length(),
       first_dump.length, second_dump.length,
       first_dump.letters, LengthToWidth(first_dump.length),
@@ -104,36 +103,36 @@ void ACStateDump::DumpPair(const ACPair& p, fmt::MemoryWriter* out) {
 }
 
 void ACStateDump::DumpHarvestEdge(const ACPair& from, const ACPair& to, bool from_is_flipped) {
-  Write(ac_graph_edges_, [&](fmt::MemoryWriter& data) {
+  Write(ac_graph_edges_, [&](fmt::memory_buffer& data) {
     DumpPair(from, &data);
-    data.write(" ");
+    fmt::format_to(std::back_inserter(data), " ");
     DumpPair(to, &data);
-    data.write(" h{:d}\n", from_is_flipped);
+    fmt::format_to(std::back_inserter(data), " h{:d}\n", from_is_flipped);
   });
 }
 
 void ACStateDump::DumpHarvestEdges(const ACPair& from, const std::vector<ACPair>& to, bool from_is_flipped) {
-  Write(ac_graph_edges_, [&](fmt::MemoryWriter& data) {
+  Write(ac_graph_edges_, [&](fmt::memory_buffer& data) {
     DumpPair(from, &data);
     for (auto&& p : to) {
       if (from == p) {
         continue;
       }
-      data.write(" ");
+      fmt::format_to(std::back_inserter(data), " ");
       DumpPair(p, &data);
-      data.write(" h{:d}", from_is_flipped);
+      fmt::format_to(std::back_inserter(data), " h{:d}", from_is_flipped);
     }
-    data.write("\n");
+    fmt::format_to(std::back_inserter(data), "\n");
   });
 }
 
 void ACStateDump::DumpAutomorphEdge(const ACPair& from, const ACPair& to, bool inverse) {
   assert(inverse ? from < to : from > to);
-  Write(ac_graph_edges_, [&](fmt::MemoryWriter& data) {
+  Write(ac_graph_edges_, [&](fmt::memory_buffer& data) {
     DumpPair(from, &data);
-    data.write(" ");
+    fmt::format_to(std::back_inserter(data), " ");
     DumpPair(to, &data);
-    data.write(" a{:d}\n", inverse);
+    fmt::format_to(std::back_inserter(data), " a{:d}\n", inverse);
   });
 }
 
@@ -166,16 +165,16 @@ ACPair ACStateDump::LoadPair(const std::string& pair_dump) {
 }
 
 void ACStateDump::DumpPairQueueState(const ACPair& pair, PairQueueState state) {
-  Write(pairs_queue_, [&](fmt::MemoryWriter& data) {
+  Write(pairs_queue_, [&](fmt::memory_buffer& data) {
     DumpPair(pair, &data);
-    data.write(" {}\n", static_cast<int>(state));
+    fmt::format_to(std::back_inserter(data), " {}\n", static_cast<int>(state));
   });
 }
 
 void ACStateDump::DumpPairClass(const ACPair& p, const ACClass& c) {
-  Write(ac_pair_class_, [&](fmt::MemoryWriter& data) {
+  Write(ac_pair_class_, [&](fmt::memory_buffer& data) {
     DumpPair(p, &data);
-    data.write(" {}\n", c.id_);
+    fmt::format_to(std::back_inserter(data), " {}\n", c.id_);
   });
 }
 

@@ -87,12 +87,12 @@ struct ACWorkerStats {
 
   ACWorkerStats(const Config& c);
   ACWorkerStats(ACWorkerStats&&)=default;
-  ACWorkerStats& operator=(ACWorkerStats&&)=default;
+  ACWorkerStats& operator=(ACWorkerStats&&)=delete;
   ~ACWorkerStats();
 
   template<typename F>
   void Write(std::ostream* to, bool tee_to_stdout, F&& f) {
-    fmt::MemoryWriter data;
+    fmt::memory_buffer data;
     f(data);
     write_tasks_.Push(WriteTask{to, std::move(data), tee_to_stdout});
   }
@@ -100,7 +100,7 @@ struct ACWorkerStats {
  private:
   struct WriteTask {
     std::ostream* out_ = nullptr;
-    fmt::MemoryWriter data_;
+    fmt::memory_buffer data_;
     bool tee_to_stdout_ = false;
 
     WriteTask() = default;
@@ -111,7 +111,7 @@ struct ACWorkerStats {
     WriteTask& operator=(WriteTask&& other)=default;
     WriteTask(WriteTask&& other)=default;
 
-    WriteTask(std::ostream* out, fmt::MemoryWriter data, bool tee_to_stdout)
+    WriteTask(std::ostream* out, fmt::memory_buffer data, bool tee_to_stdout)
         : out_(out)
         , data_(std::move(data))
         , tee_to_stdout_(tee_to_stdout)

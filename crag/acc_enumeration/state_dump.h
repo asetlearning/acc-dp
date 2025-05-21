@@ -22,13 +22,13 @@ struct ACStateDump {
 
   ACStateDump(const Config& c);
   ACStateDump(ACStateDump&&)=default;
-  ACStateDump& operator=(ACStateDump&&)=default;
+  ACStateDump& operator=(ACStateDump&&)=delete;
   ~ACStateDump();
 
   void Merge(const ACClass&, const ACClass&);
 
   static void DumpPair(const ACPair& p, std::ostream* out);
-  static void DumpPair(const ACPair& p, fmt::MemoryWriter* out);
+  static void DumpPair(const ACPair& p, fmt::memory_buffer* out);
 
   static constexpr const char* pair_dump_re = "\\d{2}:\\d{2}:\\d{2}:[0-9a-f]+:[0-9a-f]+";
 
@@ -56,7 +56,7 @@ struct ACStateDump {
 
   struct WriteTask {
     std::ostream* out_ = nullptr;
-    fmt::MemoryWriter data_;
+    fmt::memory_buffer data_;
 
     WriteTask() = default;
 
@@ -74,7 +74,7 @@ struct ACStateDump {
       , data_(std::move(other.data_))
     { }
 
-    WriteTask(std::ostream* out, fmt::MemoryWriter data)
+    WriteTask(std::ostream* out, fmt::memory_buffer data)
       : out_(out)
       , data_(std::move(data))
     { }
@@ -86,7 +86,7 @@ struct ACStateDump {
  private:
   template<typename F>
   void Write(std::ostream& to, F&& f) {
-    fmt::MemoryWriter data;
+    fmt::memory_buffer data;
     f(data);
     write_tasks_.Push(WriteTask{&to, std::move(data)});
   }
@@ -94,18 +94,18 @@ struct ACStateDump {
 
 template <typename Container>
 void ACStateDump::DumpAutomorphEdges(const ACPair& from, const Container& to, bool inverse)  {
-  Write(ac_graph_edges_, [&](fmt::MemoryWriter& data) {
+  Write(ac_graph_edges_, [&](fmt::memory_buffer& data) {
     DumpPair(from, &data);
     for (auto&& p : to) {
       if (from == p) {
         continue;
       }
       assert(inverse ? from < p : from > p);
-      data.write(" ");
+      fmt::format_to(std::back_inserter(data), " ");
       DumpPair(p, &data);
-      data.write(" a{:d}", inverse);
+      fmt::format_to(std::back_inserter(data), " a{:d}", inverse);
     }
-    data.write("\n");
+    fmt::format_to(std::back_inserter(data), "\n");
   });
 }
 

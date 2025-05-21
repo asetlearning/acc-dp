@@ -36,7 +36,7 @@ using namespace crag;
 std::vector<ACPair> LoadInput(const Config& c) {
   std::ifstream in(c.input().native());
   if (in.fail()) {
-    throw fmt::SystemError(errno, "Can't read {}", c.input());
+    throw fmt::system_error(errno, "Can't read {}", c.input().string());
   }
 
   std::vector<ACPair> result;
@@ -289,7 +289,7 @@ void EnumerateAC(path config_path) {
   struct rusage usage;
 
   if (getrusage(RUSAGE_SELF, &usage) == -1) {
-    throw fmt::SystemError(errno, "Can't query resorse usage");
+    throw fmt::system_error(errno, "Can't query resorse usage");
   }
 
   auto final_stats = config.ofstream(config.run_stats(), std::ios::app);
@@ -317,5 +317,5 @@ int main(int argc, char* argv[]) {
   execl(cleanup_path.c_str(), cleanup_path.c_str(), argv[1], (char *) NULL);
 
   // execl never returns
-  throw fmt::SystemError(errno, "Can\'t exec {}", cleanup_path);
+  throw fmt::system_error(errno, "Can\'t exec {}", cleanup_path.string());
 }

@@ -39,7 +39,7 @@ void ProcessNewWordsDump(const Config& c) {
 
   BoostFilteringIStream dump = c.ifstream(c.classes_minimums_dump());
   if (dump.fail()) {
-    throw fmt::SystemError(errno, "cannot open file '{}' for reading", c.classes_minimums_dump().native());
+    throw fmt::system_error(errno, "cannot open file '{}' for reading", c.classes_minimums_dump().native());
   }
 
   auto ParseInput = [&] (std::istream& in) {
@@ -63,7 +63,7 @@ void ProcessNewWordsDump(const Config& c) {
   std::ofstream out(c.classes_minimums_in().native(), std::ios_base::trunc);
 
   if (out.fail()) {
-    throw fmt::SystemError(errno, "cannot open file '{}' for writing", c.classes_minimums_in().native());
+    throw fmt::system_error(errno, "cannot open file '{}' for writing", c.classes_minimums_in().native());
   }
 
   for (auto&& elem : min_word) {
@@ -267,7 +267,7 @@ void ProcessEdges(const Config& c) {
       continue;
     }
 
-    fmt::StringRef current_origin(current_line.c_str(), origin_end);
+    std::string_view current_origin(current_line.c_str(), origin_end);
     if (current_origin != origin) {
       if (!termini.empty()) {
         output.write(origin.c_str(), origin.size());
@@ -282,7 +282,7 @@ void ProcessEdges(const Config& c) {
         output.put('\n');
         termini.clear();
       }
-      origin = current_origin.to_string();
+      origin = std::string(current_origin);
     }
 
     current_terminus = std::sregex_iterator(current_line.begin() + origin_end, current_line.end(), terminus_regex);

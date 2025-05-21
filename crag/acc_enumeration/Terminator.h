@@ -9,6 +9,7 @@
 #include <memory>
 #include <thread>
 #include <vector>
+#include <functional>
 
 //! Some handle over SIGTERM/SIGINT
 /**

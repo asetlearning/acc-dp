@@ -9,6 +9,7 @@
 #include <iostream>
 #include <future>
 #include <vector>
+#include <functional>
 
 namespace {
 

@@ -56,7 +56,7 @@ struct ACClass {
 
   //! Simple way to print the state of the class, single-line
   void DescribeForLog(std::ostream* out) const;
-  void DescribeForLog(fmt::MemoryWriter* out) const;
+  void DescribeForLog(fmt::memory_buffer* out) const;
 
   bool IsPrimary() const {
     return merged_with_ == id_;

@@ -395,10 +395,10 @@ struct ACWorker {
         full_report = true;
       }
 
-      fmt::MemoryWriter new_stats;
+      fmt::memory_buffer new_stats;
 
-      new_stats.write("{}/{}/{}\n",
-                      state_->processed_count,
+      fmt::format_to(std::back_inserter(new_stats),"{}/{}/{}\n",
+                      state_->processed_count.load(),
                       state_->data.queue->GetTasksCount(),
                       state_->data.ac_index->GetData().size());
 
@@ -412,30 +412,30 @@ struct ACWorker {
         }
       }
 
-      new_stats.write("Distinct classes: {}\n", distinct_count);
+      fmt::format_to(std::back_inserter(new_stats), "Distinct classes: {}\n", distinct_count);
 
       if (distinct_count < 100) {
         for (auto&& c : *ac_classes) {
           if (c.IsPrimary()) {
             c.DescribeForLog(&new_stats);
-            new_stats.write("\n");
+            fmt::format_to(std::back_inserter(new_stats), "\n");
           }
         }
       } else {
         for (auto&& length : lengths_counts) {
-          new_stats.write("Length {}: {}\n", length.first, length.second);
+          fmt::format_to(std::back_inserter(new_stats), "Length {}: {}\n", length.first, length.second);
           if (full_report && length.second < 50) {
             for (auto&& c : *ac_classes) {
               if (c.IsPrimary() && c.minimal_[0].size() + c.minimal_[1].size() == length.first) {
                 c.DescribeForLog(&new_stats);
-                new_stats.write("\n");
+                fmt::format_to(std::back_inserter(new_stats), "\n");
               }
             }
           }
         }
       }
-
-      std::clog << new_stats.c_str();
+      // TODO: see if can do withtou converting
+      std::clog << fmt::to_string(new_stats);
     }
   }
 
@@ -451,36 +451,36 @@ struct ACWorker {
     };
 
     state_->worker_stats->Write(&state_->worker_stats->move_stats_out_,
-        state_->data.config.stats_to_stout_ == Config::StatsToStdout::kFull,  [&] (fmt::MemoryWriter& out) {
-      out.write("{}", state_->data.queue->GetTasksCount());
+        state_->data.config.stats_to_stout_ == Config::StatsToStdout::kFull,  [&] (fmt::memory_buffer& out) {
+      fmt::format_to(std::back_inserter(out), "{}", state_->data.queue->GetTasksCount());
 
 
-      out.write(", {:.4f}", std::chrono::duration<double>(stats.total_time.Total()).count());
+      fmt::format_to(std::back_inserter(out), ", {:.4f}", std::chrono::duration<double>(stats.total_time.Total()).count());
       for(auto& f : stats.timers) {
         all_time += f.Total();
-        out.write(", {}@{}", GetMs(f.Total()), GetMs(f.Average()));
+        fmt::format_to(std::back_inserter(out), ", {}@{}", GetMs(f.Total()), GetMs(f.Average()));
       }
 
-      out.write(", {}", GetMs(stats.total_time.Total() - all_time));
+      fmt::format_to(std::back_inserter(out), ", {}", GetMs(stats.total_time.Total() - all_time));
 
       for(auto& f : stats.timers) {
-        out.write(", {}", GetPct(f.Total()));
+        fmt::format_to(std::back_inserter(out), ", {}", GetPct(f.Total()));
       }
 
       for (auto& c : stats.num_stats) {
-        out.write(", {}", c);
+        fmt::format_to(std::back_inserter(out), ", {}", c);
       }
 
-      out.write(", {:d}, {:d}, {:d}, {:d}, {:d}, ", swapped, info.use_automorphisms, info.is_trivial, info.harvest_limit,
+      fmt::format_to(std::back_inserter(out),", {:d}, {:d}, {:d}, {:d}, {:d}, ", swapped, info.use_automorphisms, info.is_trivial, info.harvest_limit,
           info.complete_count);
       ACStateDump::DumpPair(p, &out);
-      out.write("\n");
+      fmt::format_to(std::back_inserter(out), "\n");
     });
 
     if (Config::StatsToStdout::kShort == state_->data.config.stats_to_stout_) {
       state_->worker_stats->Write(nullptr,
-                                  true, [&](fmt::MemoryWriter &out) {
-            out.write("{:7d}, {:7.4f}, {:2}, {:2},{:5},{:5}, {:7}, {:7}\n",
+                                  true, [&](fmt::memory_buffer &out) {
+            fmt::format_to(std::back_inserter(out), "{:7d}, {:7.4f}, {:2}, {:2},{:5},{:5}, {:7}, {:7}\n",
                       state_->data.queue->GetTasksCount(),
                       std::chrono::duration<double>(stats.total_time.Total()).count(),
                       p[0].size(), p[1].size(),
@@ -584,11 +584,11 @@ void Process(const ACTasksData& data) {
   ACWorkerStats worker_stats(data.config);
 
   worker_stats.Write(&worker_stats.move_stats_out_,
-      data.config.stats_to_stout_ == Config::StatsToStdout::kFull, [](fmt::MemoryWriter& out) {
+      data.config.stats_to_stout_ == Config::StatsToStdout::kFull, [](fmt::memory_buffer& out) {
     std::regex header("([^,]+)(,?)");
     std::string timers_names_pct = std::regex_replace(MoveStats::timers_order, header, "$1_pct$2");
 
-    out.write("tasks_left, move_total_time, {}, rest_time, {}, {}, is_swapped, use_automorphisms, is_trivial, "
+        fmt::format_to(std::back_inserter(out), "tasks_left, move_total_time, {}, rest_time, {}, {}, is_swapped, use_automorphisms, is_trivial, "
                   "harvest_limit, complete_count, pair\n", MoveStats::timers_order, timers_names_pct,
         MoveStats::stats_order);
   });
@@ -605,6 +605,6 @@ void Process(const ACTasksData& data) {
   }
 
   auto final_stats = data.config.ofstream(data.config.run_stats(), std::ios::app);
-  fmt::print(final_stats, "Processed {} pairs\n", state.processed_count);
+  fmt::print(final_stats, "Processed {} pairs\n", state.processed_count.load());
 }
 

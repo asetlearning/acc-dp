@@ -92,6 +92,7 @@ const char* IsTrivialToString(IsTrivialResult v) {
       return "Unknown";
   }
   assert(false);
+  return nullptr;
 }
 
 bool isTrivial(const CWord& u, const CWord& v) {

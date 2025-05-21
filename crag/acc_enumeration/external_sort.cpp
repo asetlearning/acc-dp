@@ -6,11 +6,12 @@
 #include <future>
 #include <iostream>
 #include <vector>
-
+#include <deque>
 
 #include "boost_filtering_stream.h"
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/device/file.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include "external_sort.h"
@@ -186,7 +187,7 @@ void ExternalSort(const fs::path& input_path, const fs::path& output_path, const
   } remove_temp_chunks(chunks_paths);
 
   if (write_failed.load()) {
-    throw fmt::SystemError(write_error, "Can't write to a temporary chunk file");
+    throw fmt::system_error(write_error, "Can't write to a temporary chunk file");
   }
 
   fs::ofstream output_file(output_path, compress ? (std::ios::out | std::ios::binary) : std::ios::out);
@@ -226,7 +227,7 @@ void ExternalSort(const fs::path& input_path, const fs::path& output_path, const
     output.write(top_lines.back().first.c_str(), top_lines.back().first.size());
     output.put('\n');
     if (output.fail()) {
-      throw fmt::SystemError(errno, "Can't record the result of sort to {}", output_path);
+      throw fmt::system_error(errno, "Can't record the result of sort to {}", output_path.string());
     }
 
     std::getline(chunks[top_lines.back().second], top_lines.back().first);

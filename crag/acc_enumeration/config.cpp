@@ -24,7 +24,7 @@ static size_t GetTotalRAM() {
 static size_t GetTotalRAM() {
       auto buffer = std::get_temporary_buffer<char>(64ull << 30);
       std::return_temporary_buffer(buffer.first);
-      memory_limit_ = return buffer.second;
+      return buffer.second;
 }
 
 #endif
@@ -32,7 +32,7 @@ static size_t GetTotalRAM() {
 void Config::DumpConfig() const {
   fs::ofstream config_file(config_path_);
   if (config_file.fail()) {
-    throw fmt::SystemError(errno, "Can't write to {}", config_path_);
+    throw fmt::system_error(errno, "Can't write to {}", config_path_.string());
   }
   config_file << ConfigAsString();
 }
