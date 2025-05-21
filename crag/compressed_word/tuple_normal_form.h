@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <deque>
 #include <set>
+#include <sstream>
 
 #include <boost/optional.hpp>
 
@@ -142,6 +143,8 @@ class CWordTuple {
   constexpr bool operator!=(const CWordTuple& other) const {
     return !(*this == other);
   }
+
+  std::string toString() const;
  private:
   std::array<CWord, N> words_;
 };
@@ -161,6 +164,13 @@ std::ostream& operator<<(std::ostream& out, const CWordTuple<N>& t) {
     out << w;
   }
   return out << ")";
+}
+
+template<size_t N>
+std::string CWordTuple<N>::toString() const {
+    std::ostringstream out;
+    out << *this;
+    return out.str();
 }
 
 //! Return the minimal cyclic permutation of @p w in CWord's order

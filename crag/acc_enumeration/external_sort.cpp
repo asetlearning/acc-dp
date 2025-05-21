@@ -45,7 +45,7 @@ class LimitedAsyncExecutor {
   }
 
   template< class Function, class... Args>
-  std::future<typename std::result_of<Function(Args...)>::type>
+  std::future<typename std::invoke_result<Function, Args...>::type>
   async(Function&& f, Args&&... args) {
     while (running_count_.fetch_add(1) >= kLimit_) {
       if (running_count_.fetch_sub(1) > kLimit_) {
@@ -61,7 +61,7 @@ class LimitedAsyncExecutor {
 
  private:
   template< class Function, class... Args>
-  static typename std::result_of<Function(Args...)>::type
+  static typename std::invoke_result<Function, Args...>::type
   InvokeAndReport(LimitedAsyncExecutor* e, Function&& f, Args&&... args) {
     auto result = f(std::forward<Args>(args)...);
     e->running_count_.fetch_sub(1);

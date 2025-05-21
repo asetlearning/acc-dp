@@ -34,8 +34,7 @@ void ACClass::DescribeForLog(std::ostream* out) const {
 }
 
 void ACClass::DescribeForLog(fmt::memory_buffer *out) const {
-// TODO: fix this
-//  fmt::format_to(std::back_inserter(*out), "{}: {}(", id_, initial_);
+  fmt::format_to(std::back_inserter(*out), "{}: {}(", id_, initial_.toString());
   switch (init_kind()) {
     case AutKind::Ident:
       fmt::format_to(std::back_inserter(*out), "Id");
@@ -52,12 +51,11 @@ void ACClass::DescribeForLog(fmt::memory_buffer *out) const {
   }
 
 
-// TODO: fix this
-//  if (id_ != merged_with_) {
-//    fmt::format_to(std::back_inserter(*out), "): => ", merged_with_);
-//  } else {
-//    fmt::format_to(std::back_inserter(*out), "): {}, {}", minimal_, aut_types_);
-//  }
+  if (id_ != merged_with_) {
+    fmt::format_to(std::back_inserter(*out), "): => ", merged_with_);
+  } else {
+    fmt::format_to(std::back_inserter(*out), "): {}, {}", minimal_.toString(), aut_types_.to_string());
+  }
 }
 
 ACClass::ACClass(size_t id, ACPair initial, ACPair image, AutKind kind, ACStateDump* logger)

@@ -434,7 +434,6 @@ struct ACWorker {
           }
         }
       }
-      // TODO: see if can do withtou converting
       std::clog << fmt::to_string(new_stats);
     }
   }
